@@ -13,13 +13,15 @@ interface IVerifyProofAggregation {
     ) external view returns (bool);
 }
 
-contract AnonPay {
+contract AnonPayRegistration {
 
     address public zkVerify; // zkVerify contract
     bytes32 public vkey; // vkey for our circuit
 
     bytes32 public constant PROVING_SYSTEM_ID = keccak256(abi.encodePacked("groth16"));
     bytes32 public constant VERSION_HASH = sha256(abi.encodePacked(""));
+
+    mapping(address => bool) public registeredUsers;
 
     constructor(address _zkVerify, bytes32 _vkey) {
         zkVerify = _zkVerify;
@@ -64,12 +66,20 @@ contract AnonPay {
         v = (v >> 128) | (v << 128);
     }
 
-    function checkHash(uint256[]  memory inputs, uint256 _aggregationId, uint256 _domainId, bytes32[] calldata _merklePath, uint256 _leafCount, uint256 _index) public view {
+    function checkHash(uint256[]  memory inputs, uint256 _aggregationId, uint256 _domainId, bytes32[] calldata _merklePath, uint256 _leafCount, uint256 _index) public {
 
         bytes32 inputs_hash = keccak256(abi.encodePacked(_changeEndianess(inputs[0]),_changeEndianess(inputs[1]),_changeEndianess(inputs[2]),_changeEndianess(inputs[3]),_changeEndianess(inputs[4]),_changeEndianess(inputs[5]),_changeEndianess(inputs[6]),_changeEndianess(inputs[7]),_changeEndianess(inputs[8])));
 
         bytes32 leaf = keccak256(abi.encodePacked(PROVING_SYSTEM_ID, vkey, VERSION_HASH, inputs_hash));
 
         require(IVerifyProofAggregation(zkVerify).verifyProofAggregation(_domainId, _aggregationId, leaf, _merklePath, _leafCount, _index ), "Invalid proof");
+
+        // Register the user's wallet address upon valid proof
+        registeredUsers[msg.sender] = true;
+    }
+
+    // Function to check if a user is registered
+    function isUserRegistered(address user) public view returns (bool) {
+        return registeredUsers[user];
     }
 }

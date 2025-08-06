@@ -7,6 +7,7 @@ import {
 import { useEffect, useState } from "react";
 import axios from "axios";
 import key from "./vkey.json";
+import fs from "fs";
 
 type HomeProps = {
   setUseTestAadhaar: (state: boolean) => void;
@@ -30,10 +31,15 @@ export default function Home({ setUseTestAadhaar, useTestAadhaar }: HomeProps) {
     setUseTestAadhaar(!useTestAadhaar);
   };
 
+
+
   const verifyProofWithRelayer = async () => {
+
+    console.log([latestProof?.proof.pubkeyHash, latestProof?.proof.nullifier, latestProof?.proof.timestamp, latestProof?.proof.ageAbove18, latestProof?.proof.gender, latestProof?.proof.pincode, latestProof?.proof.state, latestProof?.proof.nullifierSeed, latestProof?.proof.signalHash]) 
     const params = {
         "proofType": "groth16",
-        "vkRegistered": false,
+        "vkRegistered": true,
+        "chainId": 845320009,
         "proofOptions": {
             "library": "snarkjs",
             "curve": "bn128"
@@ -41,14 +47,14 @@ export default function Home({ setUseTestAadhaar, useTestAadhaar }: HomeProps) {
         "proofData": {
             "proof": latestProof?.proof.groth16Proof,
             "publicSignals": [latestProof?.proof.pubkeyHash, latestProof?.proof.nullifier, latestProof?.proof.timestamp, latestProof?.proof.ageAbove18, latestProof?.proof.gender, latestProof?.proof.pincode, latestProof?.proof.state, latestProof?.proof.nullifierSeed, latestProof?.proof.signalHash],
-            "vk": key
+            "vk": "0x0b692be7b498a34664f07464866c2948b3ba925657185e5f2323be452bfd6722"
         }    
     }
     const requestResponse = await axios.post(`${API_URL}/submit-proof/${process.env.NEXT_PUBLIC_API_KEY}`, params);
 
     while(true){
         const jobStatusResponse = await axios.get(`${API_URL}/job-status/${process.env.NEXT_PUBLIC_API_KEY}/${requestResponse.data.jobId}`);
-        if(jobStatusResponse.data.status === "IncludedInBlock"){
+        if(jobStatusResponse.data.status === "Aggregated"){
             console.log("Job finalized successfully");
             console.log(jobStatusResponse.data);
             setTx(`https://zkverify-testnet.subscan.io/extrinsic/${jobStatusResponse.data.txHash}`)

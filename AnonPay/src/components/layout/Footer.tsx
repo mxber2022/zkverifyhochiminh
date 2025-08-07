@@ -19,12 +19,12 @@ export const Footer: React.FC = () => {
           </div>
 
           {/* Links */}
-          <div className="flex items-center space-x-6 text-sm text-neutral-400">
+          {/* <div className="flex items-center space-x-6 text-sm text-neutral-400">
             <a href="#" className="hover:text-white transition-colors font-medium">Privacy Policy</a>
             <a href="#" className="hover:text-white transition-colors font-medium">Terms of Service</a>
             <a href="#" className="hover:text-white transition-colors font-medium">Compliance</a>
             <a href="#" className="hover:text-white transition-colors font-medium">Support</a>
-          </div>
+          </div> */}
 
           {/* Social Links */}
           <div className="flex items-center space-x-4">

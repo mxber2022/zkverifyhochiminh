@@ -9,7 +9,7 @@ import {
 import { verifyProofWithRelayer } from '../../services/aadhaarService';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { useSendTransaction } from '@privy-io/react-auth';
-import { encodeFunctionData, parseEther } from 'viem';
+import { encodeFunctionData, parseEther, createPublicClient, http } from 'viem';
 
 interface AadhaarVerificationProps {
   onVerificationComplete: (txHash: string) => void;
@@ -32,6 +32,7 @@ export const AadhaarVerification: React.FC<AadhaarVerificationProps> = ({
   const [isLinkingWallet, setIsLinkingWallet] = useState(false);
   const [walletLinked, setWalletLinked] = useState(false);
   const [linkTx, setLinkTx] = useState('');
+  const [isLoadingStatus, setIsLoadingStatus] = useState(true);
 
   // Privy hooks
   const { user } = usePrivy();
@@ -40,10 +41,70 @@ export const AadhaarVerification: React.FC<AadhaarVerificationProps> = ({
   const walletAddress = wallets?.[0]?.address;
   // Contract details
   const CONTRACT_ADDRESS = '0x964D28b5cC79af30210AC59AAd93a80E140Bd0cd';
+  
+  // Viem client for reading contract
+  const publicClient = createPublicClient({
+    chain: {
+      id: 845320009,
+      name: 'Horizon Testnet',
+      network: 'horizon-testnet',
+      nativeCurrency: {
+        decimals: 18,
+        name: 'ETH',
+        symbol: 'ETH',
+      },
+      rpcUrls: {
+        default: { http: ['https://rpc.horizon-testnet.com'] },
+        public: { http: ['https://rpc.horizon-testnet.com'] },
+      },
+    },
+    transport: http()
+  });
 
   // Anon Aadhaar hooks
   const [anonAadhaar] = useAnonAadhaar();
   const [, latestProof] = useProver();
+
+  // Check verification status from contract
+  const checkVerificationStatus = async () => {
+    if (!walletAddress) {
+      setIsLoadingStatus(false);
+      return;
+    }
+    
+    try {
+      const isVerified = await publicClient.readContract({
+        address: CONTRACT_ADDRESS as `0x${string}`,
+        abi: [{
+          name: 'registeredUsers',
+          type: 'function',
+          inputs: [{ name: 'user', type: 'address' }],
+          outputs: [{ name: '', type: 'bool' }],
+          stateMutability: 'view'
+        }],
+        functionName: 'registeredUsers',
+        args: [walletAddress as `0x${string}`]
+      });
+      
+      if (isVerified) {
+        setWalletLinked(true);
+        onVerificationComplete('Already verified');
+      }
+    } catch (error) {
+      console.error('Error checking verification status:', error);
+    } finally {
+      setIsLoadingStatus(false);
+    }
+  };
+
+  // Check status when wallet is connected
+  useEffect(() => {
+    if (walletAddress) {
+      checkVerificationStatus();
+    } else {
+      setIsLoadingStatus(false);
+    }
+  }, [walletAddress]);
 
   const handleVerifyProof = async () => {
     if (!latestProof) {
@@ -150,7 +211,22 @@ export const AadhaarVerification: React.FC<AadhaarVerificationProps> = ({
     }
   };
 
-  if (isVerified) {
+  // Show loading state while checking verification status
+  if (isLoadingStatus) {
+    return (
+      <div className="bg-blue-900/20 border border-blue-800 rounded-xl p-6">
+        <div className="flex items-center justify-center space-x-3">
+          <div className="w-6 h-6 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+          <div>
+            <h4 className="text-white font-bold">Loading Verification Status</h4>
+            <p className="text-blue-300 text-sm">Checking your verification status...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (isVerified || walletLinked) {
     return (
       <div className="bg-green-900/20 border border-green-800 rounded-xl p-6">
         <div className="flex items-center space-x-3 mb-4">

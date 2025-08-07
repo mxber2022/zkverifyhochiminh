@@ -2,7 +2,7 @@ import axios from 'axios';
 
 const API_URL = 'https://relayer-api.horizenlabs.io/api/v1';
 
-export const verifyProofWithRelayer = async (latestProof: any, setStatus?: (status: string) => void): Promise<string> => {
+export const verifyProofWithRelayer = async (latestProof: any, setStatus?: (status: string) => void): Promise<{txHash: string, aggregationDetails: any, aggregationId: number}> => {
   console.log([
     latestProof?.proof.pubkeyHash, 
     latestProof?.proof.nullifier, 
@@ -59,7 +59,11 @@ export const verifyProofWithRelayer = async (latestProof: any, setStatus?: (stat
       console.log("Job finalized successfully");
       console.log(jobStatusResponse.data);
       const txHash = `https://zkverify-testnet.subscan.io/extrinsic/${jobStatusResponse.data.txHash}`;
-      return txHash;
+      return {
+        txHash,
+        aggregationDetails: jobStatusResponse.data.aggregationDetails,
+        aggregationId: jobStatusResponse.data.aggregationId
+      };
     } else {
       console.log("Job status: ", currentStatus);
       console.log("Waiting for job to finalize...");

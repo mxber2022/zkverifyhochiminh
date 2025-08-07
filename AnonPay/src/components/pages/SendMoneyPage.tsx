@@ -238,14 +238,70 @@ export const SendMoneyPage: React.FC = () => {
             );
             
             console.log(`${currency} transfer initiated:`, tx.hash);
-            setTransactionStatus('success');
-            setIsLoading(false);
-            
-            console.log(`${currency} transfer successful:`, {
-              txHash: tx.hash,
-              recipient: recipientAddress,
-              amount: amount
+
+            const publicClient = createPublicClient({
+              chain: {
+                id: 845320009,
+                name: 'Horizon Testnet',
+                network: 'horizon-testnet',
+                nativeCurrency: {
+                  decimals: 18,
+                  name: 'ETH',
+                  symbol: 'ETH',
+                },
+                rpcUrls: {
+                  default: { http: ['https://horizen-rpc-testnet.appchain.base.org'] },
+                  public: { http: ['https://horizen-rpc-testnet.appchain.base.org'] },
+                },
+              },
+              transport: http()
             });
+
+            // Poll for transaction receipt
+      let receipt = null;
+      let attempts = 0;
+      const maxAttempts = 60; // Wait up to 5 minutes (60 * 5 seconds)
+      
+      while (!receipt && attempts < maxAttempts) {
+        try {
+          console.log('Attempting to get transaction receipt:', tx.hash);
+          receipt = await publicClient.getTransactionReceipt({
+            hash: tx.hash as `0x${string}`
+          });
+          if (receipt) {
+            console.log('Transaction confirmed:', receipt);
+            setTransactionStatus('success');
+               setIsLoading(false);
+            break;
+          }
+        } catch (error) {
+          // Transaction not yet mined, continue polling
+        }
+        
+        // Wait 5 seconds before next attempt
+        await new Promise(resolve => setTimeout(resolve, 5000));
+        attempts++;
+      }
+    
+
+           
+            // const receipt = await publicClient.getTransactionReceipt({
+            //   hash: tx.hash as `0x${string}`
+            // });
+
+            // console.log('Transaction confirmed:', receipt);
+
+            // if(receipt){
+            //   setTransactionStatus('success');
+            //   setIsLoading(false);
+              
+            //   console.log(`${currency} transfer successful:`, {
+            //     txHash: tx.hash,
+            //     recipient: recipientAddress,
+            //     amount: amount
+            //   });
+            // }
+           
           }
         
         // Reset form after success
@@ -263,13 +319,13 @@ export const SendMoneyPage: React.FC = () => {
       
       // Show user-friendly error message
       if (error.code === 'INSUFFICIENT_FUNDS') {
-        alert('Insufficient balance for this transfer');
+        // alert('Insufficient balance for this transfer');
       } else if (error.code === 'UNPREDICTABLE_GAS_LIMIT') {
-        alert('Transaction failed due to gas estimation error. Please try again.');
+        // alert('Transaction failed due to gas estimation error. Please try again.');
       } else if (error.message?.includes('user rejected')) {
-        alert('Transaction was cancelled by user');
+        // alert('Transaction was cancelled by user');
       } else {
-        alert(`Transaction failed: ${error.message || 'Unknown error'}`);
+        // alert(`Transaction failed: ${error.message || 'Unknown error'}`);
       }
     }
   };

@@ -59,8 +59,8 @@ export const AadhaarVerification: React.FC<AadhaarVerificationProps> = ({
         symbol: 'ETH',
       },
       rpcUrls: {
-        default: { http: ['https://rpc.horizon-testnet.com'] },
-        public: { http: ['https://rpc.horizon-testnet.com'] },
+        default: { http: ['https://horizen-rpc-testnet.appchain.base.org'] },
+        public: { http: ['https://horizen-rpc-testnet.appchain.base.org'] },
       },
     },
     transport: http()
@@ -225,6 +225,40 @@ export const AadhaarVerification: React.FC<AadhaarVerificationProps> = ({
       }
     );
 
+      // Wait for transaction to be mined
+      console.log('Transaction sent:', tx.hash);
+      
+      // Poll for transaction receipt
+      let receipt = null;
+      let attempts = 0;
+      const maxAttempts = 60; // Wait up to 5 minutes (60 * 5 seconds)
+      
+      while (!receipt && attempts < maxAttempts) {
+        try {
+          receipt = await publicClient.getTransactionReceipt({
+            hash: tx.hash as `0x${string}`
+          });
+          if (receipt) {
+            console.log('Transaction confirmed:', receipt);
+            break;
+          }
+        } catch (error) {
+          // Transaction not yet mined, continue polling
+        }
+        
+        // Wait 5 seconds before next attempt
+        await new Promise(resolve => setTimeout(resolve, 5000));
+        attempts++;
+      }
+      
+      if (!receipt) {
+        throw new Error('Transaction confirmation timeout');
+      }
+      
+      // Check if transaction was successful
+      if (receipt.status === 'reverted') {
+        throw new Error('Transaction failed on blockchain');
+      }
       setLinkTx(tx.hash);
       setWalletLinked(true);
       setNotification({
@@ -235,9 +269,21 @@ export const AadhaarVerification: React.FC<AadhaarVerificationProps> = ({
       setTimeout(() => setNotification(prev => ({ ...prev, show: false })), 5000);
     } catch (error) {
       console.error('Wallet linking failed:', error);
+      let errorMessage = 'Failed to link wallet. Please try again.';
+      
+      if (error instanceof Error) {
+        if (error.message.includes('timeout')) {
+          errorMessage = 'Transaction is taking longer than expected. Please check your wallet.';
+        } else if (error.message.includes('failed on blockchain')) {
+          errorMessage = 'Transaction failed. Please check your wallet balance and try again.';
+        } else if (error.message.includes('user rejected')) {
+          errorMessage = 'Transaction was cancelled by user.';
+        }
+      }
+      
       setNotification({
         type: 'error',
-        message: 'Failed to link wallet. Please try again.',
+        message: errorMessage,
         show: true
       });
       setTimeout(() => setNotification(prev => ({ ...prev, show: false })), 5000);
@@ -403,7 +449,26 @@ export const AadhaarVerification: React.FC<AadhaarVerificationProps> = ({
           </div>
           
           <div className="bg-neutral-900/50 border border-green-800/30 rounded-xl p-4">
-            <AnonAadhaarProof code={JSON.stringify(latestProof, null, 2)} />
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h5 className="text-green-200 font-bold text-sm">Generated Proof Details</h5>
+                <div className="flex items-center space-x-2 text-xs text-green-300">
+                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                  <span className="font-semibold">VERIFIED</span>
+                </div>
+              </div>
+              
+              <div className="bg-neutral-950/80 border border-green-800/20 rounded-lg p-4 max-h-64 overflow-y-auto">
+                <pre className="text-green-300 text-xs font-mono leading-relaxed whitespace-pre-wrap break-all">
+                  {JSON.stringify(latestProof, null, 2)}
+                </pre>
+              </div>
+              
+              <div className="flex items-center justify-between text-xs text-green-200/80">
+                <span>Proof Type: Groth16</span>
+                <span>Circuit: Anon Aadhaar v2.0</span>
+              </div>
+            </div>
           </div>
           
           {verificationStatus && (

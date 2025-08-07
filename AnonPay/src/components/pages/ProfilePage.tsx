@@ -3,12 +3,15 @@ import { User, Shield, CheckCircle, AlertCircle, Eye, Settings, Copy, ExternalLi
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { readContract } from 'viem/actions';
 import { createPublicClient, http, formatEther, formatUnits } from 'viem';
+import { CustomSelect } from '../ui/CustomSelect';
 
 export const ProfilePage: React.FC = () => {
   const { user } = usePrivy();
   const { wallets } = useWallets();
   const [activeTab, setActiveTab] = useState<'identity' | 'privacy' | 'settings'>('identity');
   const [isVerified, setIsVerified] = useState(false);
+  const [defaultCurrency, setDefaultCurrency] = useState('INR');
+  const [transactionNotifications, setTransactionNotifications] = useState('all');
   const [userData, setUserData] = useState({
     walletAddress: '',
     isKycVerified: false,
@@ -426,21 +429,33 @@ export const ProfilePage: React.FC = () => {
                       <label className="block text-sm font-semibold text-neutral-300 mb-2">
                         Default Currency
                       </label>
-                      <select className="w-full bg-neutral-800 border border-neutral-700 rounded-xl px-4 py-2 text-white">
-                        <option value="INR">Indian Rupee (INR)</option>
-                        <option value="USD">US Dollar (USD)</option>
-                        <option value="ETH">Ethereum (ETH)</option>
-                      </select>
+                      <CustomSelect
+                        value={defaultCurrency}
+                        onChange={setDefaultCurrency}
+                        options={[
+                          { value: 'INR', label: 'Indian Rupee (INR)' },
+                          { value: 'USD', label: 'US Dollar (USD)' },
+                          { value: 'ETH', label: 'Ethereum (ETH)' }
+                        ]}
+                        placeholder="Select default currency"
+                        className="w-full"
+                      />
                     </div>
                     <div>
                       <label className="block text-sm font-semibold text-neutral-300 mb-2">
                         Transaction Notifications
                       </label>
-                      <select className="w-full bg-neutral-800 border border-neutral-700 rounded-xl px-4 py-2 text-white">
-                        <option value="all">All Transactions</option>
-                        <option value="large">Large Amounts Only</option>
-                        <option value="none">None</option>
-                      </select>
+                      <CustomSelect
+                        value={transactionNotifications}
+                        onChange={setTransactionNotifications}
+                        options={[
+                          { value: 'all', label: 'All Transactions' },
+                          { value: 'large', label: 'Large Amounts Only' },
+                          { value: 'none', label: 'None' }
+                        ]}
+                        placeholder="Select notification preference"
+                        className="w-full"
+                      />
                     </div>
                   </div>
                 </div>

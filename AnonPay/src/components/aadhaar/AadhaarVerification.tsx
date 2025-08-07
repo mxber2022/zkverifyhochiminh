@@ -568,17 +568,30 @@ export const AadhaarVerification: React.FC<AadhaarVerificationProps> = ({
                     <p className="text-green-300 text-sm font-medium">Your wallet is now verified and linked</p>
                   </div>
                 </div>
-                {linkTx && (
-                  <a 
-                    href={`https://zkverify-testnet.subscan.io/extrinsic/${linkTx}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center space-x-2 text-green-400 hover:text-green-300 text-sm font-bold transition-colors"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                    <span>View Link Transaction</span>
-                  </a>
-                )}
+                                 <div className="space-y-2">
+                   {verificationTx && (
+                     <a 
+                       href={verificationTx}
+                       target="_blank"
+                       rel="noopener noreferrer"
+                       className="inline-flex items-center space-x-2 text-blue-400 hover:text-blue-300 text-sm font-bold transition-colors"
+                     >
+                       <ExternalLink className="w-4 h-4" />
+                       <span>View ZK Proof Transaction</span>
+                     </a>
+                   )}
+                   {linkTx && (
+                     <a 
+                       href={`https://zkverify-testnet.subscan.io/extrinsic/${linkTx}`}
+                       target="_blank"
+                       rel="noopener noreferrer"
+                       className="inline-flex items-center space-x-2 text-green-400 hover:text-green-300 text-sm font-bold transition-colors"
+                     >
+                       <ExternalLink className="w-4 h-4" />
+                       <span>View Wallet Link Transaction</span>
+                     </a>
+                   )}
+                 </div>
               </div>
             </div>
           )}

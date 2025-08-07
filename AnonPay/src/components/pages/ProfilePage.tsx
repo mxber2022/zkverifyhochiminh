@@ -4,14 +4,28 @@ import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { readContract } from 'viem/actions';
 import { createPublicClient, http, formatEther, formatUnits } from 'viem';
 import { CustomSelect } from '../ui/CustomSelect';
+import { AadhaarVerification } from '../aadhaar/AadhaarVerification';
+import { useAadhaarVerification } from '../../hooks/useAadhaarVerification';
 
-export const ProfilePage: React.FC = () => {
+interface ProfilePageProps {
+  setUseTestAadhaar: (state: boolean) => void;
+  useTestAadhaar: boolean;
+}
+
+export const ProfilePage: React.FC<ProfilePageProps> = ({
+  setUseTestAadhaar,
+  useTestAadhaar
+}) => {
   const { user } = usePrivy();
   const { wallets } = useWallets();
   const [activeTab, setActiveTab] = useState<'identity' | 'privacy' | 'settings'>('identity');
   const [isVerified, setIsVerified] = useState(false);
   const [defaultCurrency, setDefaultCurrency] = useState('INR');
   const [transactionNotifications, setTransactionNotifications] = useState('all');
+  
+  // Aadhaar verification hook
+  const { isVerified: aadhaarVerified, verificationTx, handleVerificationComplete } = useAadhaarVerification();
+  
   const [userData, setUserData] = useState({
     walletAddress: '',
     isKycVerified: false,
@@ -148,14 +162,7 @@ export const ProfilePage: React.FC = () => {
     loadUserData();
   }, [user, wallets]);
 
-  const handleVerifyIdentity = () => {
-    // In a real app, this would trigger Anon Aadhaar verification
-    setIsVerified(true);
-    setTimeout(() => {
-      userData.anonAadhaarStatus = 'verified';
-      userData.isKycVerified = true;
-    }, 2000);
-  };
+
 
   const copyAddress = () => {
     navigator.clipboard.writeText(userData.walletAddress);
@@ -277,56 +284,12 @@ export const ProfilePage: React.FC = () => {
                 <h3 className="text-xl font-bold text-white mb-6">Identity Verification</h3>
                 
                 {/* Anon Aadhaar Verification */}
-                <div className="bg-gradient-to-r from-blue-950 to-indigo-950 border border-blue-800 rounded-xl p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center space-x-3">
-                      <Shield className="w-6 h-6 text-blue-400" />
-                      <div>
-                        <h4 className="text-white font-bold">Anon Aadhaar Verification</h4>
-                        <p className="text-blue-300 text-sm">Prove Indian residency without revealing personal data</p>
-                      </div>
-                    </div>
-                    <div className={`px-3 py-1 rounded-full text-xs font-bold ${
-                      userData.anonAadhaarStatus === 'verified'
-                        ? 'bg-green-950 border border-green-800 text-green-400'
-                        : userData.anonAadhaarStatus === 'pending'
-                          ? 'bg-yellow-950 border border-yellow-800 text-yellow-400'
-                          : 'bg-red-950 border border-red-800 text-red-400'
-                    }`}>
-                      {userData.anonAadhaarStatus === 'verified' ? 'VERIFIED' :
-                       userData.anonAadhaarStatus === 'pending' ? 'PENDING' : 'NOT VERIFIED'}
-                    </div>
-                  </div>
-                  
-                  {userData.anonAadhaarStatus === 'not_verified' && (
-                    <div className="space-y-4">
-                      <p className="text-blue-300 text-sm leading-relaxed">
-                        Verify your Indian identity using Anon Aadhaar to enable private, compliant transactions. 
-                        Your personal information remains completely private through zero-knowledge proofs.
-                      </p>
-                      <button
-                        onClick={handleVerifyIdentity}
-                        disabled={isVerified}
-                        className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:from-neutral-800 disabled:to-neutral-700 text-white font-bold py-3 px-6 rounded-xl transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed"
-                      >
-                        {isVerified ? 'Verifying...' : 'Verify with Anon Aadhaar'}
-                      </button>
-                    </div>
-                  )}
-                  
-                  {userData.anonAadhaarStatus === 'verified' && (
-                    <div className="space-y-3">
-                      <div className="flex items-center space-x-2 text-green-400">
-                        <CheckCircle className="w-4 h-4" />
-                        <span className="font-semibold">Identity verified successfully</span>
-                      </div>
-                      <p className="text-green-300 text-sm">
-                        Your Indian residency has been verified using zero-knowledge proofs. 
-                        You can now send and receive private, compliant payments.
-                      </p>
-                    </div>
-                  )}
-                </div>
+                <AadhaarVerification 
+                  isVerified={userData.isKycVerified}
+                  onVerificationComplete={handleVerificationComplete}
+                  setUseTestAadhaar={setUseTestAadhaar}
+                  useTestAadhaar={useTestAadhaar}
+                />
 
                 {/* KYC Status */}
                 <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6">

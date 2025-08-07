@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PrivyProvider } from '@privy-io/react-auth';
 import { Header } from './components/layout/Header';
 import { Footer } from './components/layout/Footer';
@@ -7,6 +7,7 @@ import { SendMoneyPage } from './components/pages/SendMoneyPage';
 import { TransactionsPage } from './components/pages/TransactionsPage';
 import { ProfilePage } from './components/pages/ProfilePage';
 import {defineChain} from 'viem';
+import { AnonAadhaarProvider } from "@anon-aadhaar/react";
 
 type Page = 'home' | 'send' | 'transactions' | 'profile';
 
@@ -31,12 +32,23 @@ const horizonTestnet = defineChain({
 
 function App() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
-
+  const [useTestAadhaar, setUseTestAadhaar] = useState<boolean>(false);
+  const [ready, setReady] = useState<boolean>(false);
   const handleNavigate = (page: Page) => {
     setCurrentPage(page);
   };
 
+  useEffect(() => {
+    setReady(true);
+  }, []);
+
   return (
+    <>
+    {ready ? (
+        <AnonAadhaarProvider
+          _useTestAadhaar={useTestAadhaar}
+          _appName="Anon Aadhaar"
+        >
     <PrivyProvider
       appId="cm6qt4wko001l64rpni0xtoo6" // Replace with your actual Privy app ID
       config={{
@@ -66,12 +78,18 @@ function App() {
         )}
         
         {currentPage === 'profile' && (
-          <ProfilePage />
+          <ProfilePage 
+            setUseTestAadhaar={setUseTestAadhaar}
+            useTestAadhaar={useTestAadhaar}
+          />
         )}
         
         <Footer />
       </div>
     </PrivyProvider>
+    </AnonAadhaarProvider>
+      ) : null}
+    </>
   );
 }
 

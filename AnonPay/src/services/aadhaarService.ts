@@ -2,7 +2,7 @@ import axios from 'axios';
 
 const API_URL = 'https://relayer-api.horizenlabs.io/api/v1';
 
-export const verifyProofWithRelayer = async (latestProof: any): Promise<string> => {
+export const verifyProofWithRelayer = async (latestProof: any, setStatus?: (status: string) => void): Promise<string> => {
   console.log([
     latestProof?.proof.pubkeyHash, 
     latestProof?.proof.nullifier, 
@@ -40,23 +40,28 @@ export const verifyProofWithRelayer = async (latestProof: any): Promise<string> 
     }
   };
 
+  setStatus?.('Submitting proof to relayer...');
   const requestResponse = await axios.post(
     `${API_URL}/submit-proof/${import.meta.env.VITE_API_KEY}`, 
     params
   );
 
+  setStatus?.('Proof submitted, waiting for aggregation...');
   while (true) {
     const jobStatusResponse = await axios.get(
       `${API_URL}/job-status/${import.meta.env.VITE_API_KEY}/${requestResponse.data.jobId}`
     );
     
-    if (jobStatusResponse.data.status === "Aggregated") {
+    const currentStatus = jobStatusResponse.data.status;
+    setStatus?.(`Job status: ${currentStatus}`);
+    
+    if (currentStatus === "Aggregated") {
       console.log("Job finalized successfully");
       console.log(jobStatusResponse.data);
       const txHash = `https://zkverify-testnet.subscan.io/extrinsic/${jobStatusResponse.data.txHash}`;
       return txHash;
     } else {
-      console.log("Job status: ", jobStatusResponse.data.status);
+      console.log("Job status: ", currentStatus);
       console.log("Waiting for job to finalize...");
       await new Promise(resolve => setTimeout(resolve, 5000)); // Wait for 5 seconds before checking again
     }

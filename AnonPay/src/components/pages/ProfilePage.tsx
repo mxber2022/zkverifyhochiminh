@@ -88,12 +88,51 @@ export const ProfilePage: React.FC = () => {
       // Get ETH balance for reference
       const ethBalance = await client.getBalance({ address: walletAddress as `0x${string}` });
 
+      // Get INR token transaction count by checking transfer events
+      const transferEvents = await client.getLogs({
+        address: ERC20_CONTRACT_ADDRESS as `0x${string}`,
+        event: {
+          type: 'event',
+          name: 'Transfer',
+          inputs: [
+            { type: 'address', name: 'from', indexed: true },
+            { type: 'address', name: 'to', indexed: true },
+            { type: 'uint256', name: 'value', indexed: false }
+          ]
+        },
+        args: {
+          from: walletAddress as `0x${string}`,
+        },
+        fromBlock: 'earliest',
+        toBlock: 'latest'
+      });
+
+      const receivedEvents = await client.getLogs({
+        address: ERC20_CONTRACT_ADDRESS as `0x${string}`,
+        event: {
+          type: 'event',
+          name: 'Transfer',
+          inputs: [
+            { type: 'address', name: 'from', indexed: true },
+            { type: 'address', name: 'to', indexed: true },
+            { type: 'uint256', name: 'value', indexed: false }
+          ]
+        },
+        args: {
+          to: walletAddress as `0x${string}`,
+        },
+        fromBlock: 'earliest',
+        toBlock: 'latest'
+      });
+
+      const inrTransactionCount = transferEvents.length + receivedEvents.length;
+
       setUserData({
         walletAddress,
         isKycVerified: isKycVerified as boolean,
         anonAadhaarStatus: isKycVerified ? 'verified' : 'not_verified',
         privacyScore: isKycVerified ? 95 : 45,
-        transactionCount: 0, // Would need to track this in contract
+        transactionCount: inrTransactionCount, // INR token transaction count
         totalVolume: '₹0', // Would need to track this in contract
         joinedDate: new Date(), // Would need to track this in contract
         balance: formatUnits(inrBalance as bigint, 18), // INR tokens have 18 decimals
